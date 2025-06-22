@@ -4,6 +4,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { redirect } from "next/navigation";
 import { Client, Invoice, InvoiceItem, User } from "@prisma/client";
 import InvoiceViewPage from "./InvoiceViewPage";
+import Link from "next/link";
 
 type InvoiceDetails = Invoice & {
   client: Client & {
@@ -47,9 +48,9 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
       <div className="text-center">
         <h1 className="text-2xl font-bold">Invoice not found</h1>
         <p>The invoice you are looking for does not exist or you do not have permission to view it.</p>
-        <a href="/invoices" className="mt-4 inline-block text-brand-blue hover:text-brand-blue/90">
+        <Link href="/invoices" className="mt-4 inline-block text-brand-blue hover:text-brand-blue/90">
           Back to Invoices
-        </a>
+        </Link>
       </div>
     );
   }

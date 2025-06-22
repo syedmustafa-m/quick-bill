@@ -1,15 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import ErrorBox from "../../components/ErrorBox";
 import Link from "next/link";
 import { XCircleIcon } from "@heroicons/react/24/solid";
-
-interface Client {
-  id: string;
-  companyName: string;
-}
+import { Client } from '@prisma/client';
 
 interface LineItem {
   description: string;
