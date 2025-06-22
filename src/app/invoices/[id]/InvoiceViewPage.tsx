@@ -3,7 +3,7 @@
 import { useRef } from 'react';
 import Link from 'next/link';
 import { Client, Invoice, InvoiceItem, InvoiceStatus, User } from "@prisma/client";
-import { DocumentArrowDownIcon } from "@heroicons/react/24/outline";
+import { DocumentArrowDownIcon, PaperAirplaneIcon } from "@heroicons/react/24/outline";
 
 type InvoiceDetails = Invoice & {
   client: Client & {
@@ -66,6 +66,13 @@ export default function InvoiceViewPage({ invoice }: InvoiceViewPageProps) {
                 </button>
                  <button className="px-4 py-2 text-sm font-medium text-white bg-brand-blue border border-transparent rounded-md shadow-sm hover:bg-brand-blue/90">
                     Print
+                </button>
+                <button 
+                  onClick={() => alert('Send to client functionality not yet implemented.')}
+                  className="px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md shadow-sm hover:bg-green-700 flex items-center space-x-2"
+                >
+                  <PaperAirplaneIcon className="h-4 w-4" />
+                  <span>Send to Client</span>
                 </button>
             </div>
         </div>
