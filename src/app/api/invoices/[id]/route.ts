@@ -1,22 +1,22 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import prisma from "@/lib/prisma";
 
-export async function DELETE(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(request: NextRequest) {
   const session = await getServerSession(authOptions);
 
-  if (!session || !session.user || !session.user.id) {
+  if (!session || !session.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const invoiceId = params.id;
+  // ✅ Extract invoice ID from URL
+  const url = new URL(request.url);
+  const segments = url.pathname.split('/');
+  const invoiceId = segments[segments.length - 1];
 
   try {
-    // Check if the invoice belongs to a client of the logged-in user
+    // Verify the invoice belongs to the user's client
     const invoice = await prisma.invoice.findFirst({
       where: {
         id: invoiceId,
@@ -30,26 +30,15 @@ export async function DELETE(
       return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
     }
 
-    // Use a transaction to delete invoice items and then the invoice
+    // Delete related items and then the invoice
     await prisma.$transaction([
-      prisma.invoiceItem.deleteMany({
-        where: {
-          invoiceId: invoiceId,
-        },
-      }),
-      prisma.invoice.delete({
-        where: {
-          id: invoiceId,
-        },
-      }),
+      prisma.invoiceItem.deleteMany({ where: { invoiceId } }),
+      prisma.invoice.delete({ where: { id: invoiceId } }),
     ]);
 
     return NextResponse.json({ message: "Invoice deleted successfully" }, { status: 200 });
   } catch (error) {
     console.error("Error deleting invoice:", error);
-    return NextResponse.json(
-      { error: "An unexpected error occurred." },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "An unexpected error occurred." }, { status: 500 });
   }
-} 
+}

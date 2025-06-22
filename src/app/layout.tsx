@@ -1,8 +1,8 @@
 import './globals.css';
 import { Inter } from 'next/font/google';
 import SessionProvider from './components/SessionProvider';
-import { getServerSession } from 'next-auth';
-import { authOptions } from './api/auth/[...nextauth]/route';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/lib/auth';
 import AppLayout from './components/AppLayout';
 import NextTopLoader from 'nextjs-toploader';
 

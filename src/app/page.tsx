@@ -1,6 +1,6 @@
 import { getServerSession } from "next-auth/next";
 import { redirect } from "next/navigation";
-import { authOptions } from "./api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { UsersIcon, DocumentTextIcon, BanknotesIcon } from "@heroicons/react/24/outline";
 import { InvoiceStatus } from "@prisma/client";
