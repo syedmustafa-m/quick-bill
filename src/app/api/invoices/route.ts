@@ -37,14 +37,14 @@ export async function POST(request: Request) {
     }
 
     // Calculate totals for each item and overall amount
-    const itemsWithTotals = items.map((item: any) => ({
+    const itemsWithTotals = items.map((item: { description: string; quantity: number; unitPrice: number; }) => ({
       description: item.description,
       quantity: Number(item.quantity),
       unitPrice: Number(item.unitPrice),
       total: Number(item.quantity) * Number(item.unitPrice),
     }));
 
-    const amount = itemsWithTotals.reduce((sum: number, item: any) => sum + item.total, 0);
+    const amount = itemsWithTotals.reduce((sum: number, item: { total: number; }) => sum + item.total, 0);
     const invoiceNumber = await getNextInvoiceNumber(session.user.id);
 
     const newInvoice = await prisma.invoice.create({

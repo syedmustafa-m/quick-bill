@@ -5,7 +5,7 @@ import { Fragment } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import { ChevronDownIcon, UserCircleIcon } from "@heroicons/react/24/solid";
+import { UserCircleIcon } from "@heroicons/react/24/solid";
 import SignOutButton from "./SignOutButton";
 
 export default function ProfileDropdown() {

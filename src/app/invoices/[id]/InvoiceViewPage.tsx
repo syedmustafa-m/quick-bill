@@ -2,7 +2,7 @@
 
 import { useRef } from 'react';
 import Link from 'next/link';
-import { Client, Invoice, InvoiceItem, InvoiceStatus, User } from "@prisma/client";
+import { Client, Invoice, InvoiceItem, User } from "@prisma/client";
 import { DocumentArrowDownIcon, PaperAirplaneIcon } from "@heroicons/react/24/outline";
 
 type InvoiceDetails = Invoice & {
@@ -12,21 +12,18 @@ type InvoiceDetails = Invoice & {
   items: InvoiceItem[];
 };
 
-const statusColors: Record<InvoiceStatus, string> = {
-  DRAFT: "bg-gray-700 text-gray-300",
-  SENT: "bg-orange-900 text-orange-300",
-  PAID: "bg-green-900 text-green-300",
-  CANCELLED: "bg-red-900 text-red-300",
-};
-
 interface InvoiceViewPageProps {
   invoice: InvoiceDetails;
 }
 
-export default function InvoiceViewPage({ invoice }: InvoiceViewPageProps) {
+const InvoiceViewPage = ({ invoice }: InvoiceViewPageProps) => {
   const invoiceRef = useRef(null);
   const { client, items } = invoice;
   const user = client.user;
+
+  if (!invoice) {
+    return <div>Loading...</div>;
+  }
 
   const handleDownloadPDF = async () => {
     try {
@@ -160,4 +157,6 @@ export default function InvoiceViewPage({ invoice }: InvoiceViewPageProps) {
         </div>
     </div>
   );
-} 
+}
+
+export default InvoiceViewPage; 

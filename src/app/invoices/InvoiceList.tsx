@@ -3,10 +3,13 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { Invoice, Client, InvoiceStatus } from '@prisma/client';
-import { TrashIcon } from '@heroicons/react/24/outline';
 import ConfirmationModal from '../components/ConfirmationModal';
 
-type InvoiceWithClient = Invoice & { client: Client };
+interface FullInvoice extends Invoice {
+  client: Client;
+}
+
+type InvoiceWithClient = FullInvoice & { client: Client };
 
 interface InvoiceListProps {
     invoices: InvoiceWithClient[];

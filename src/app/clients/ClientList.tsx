@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { Client } from '@prisma/client';
-import { useRouter } from 'next/navigation';
 import ConfirmationModal from '../components/ConfirmationModal';
 
 interface ClientListProps {
@@ -13,7 +12,6 @@ interface ClientListProps {
 export default function ClientList({ clients: initialClients }: ClientListProps) {
     const [clients, setClients] = useState(initialClients);
     const [searchTerm, setSearchTerm] = useState('');
-    const router = useRouter();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [clientToDelete, setClientToDelete] = useState<string | null>(null);
 
