@@ -1,19 +1,17 @@
 import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+import { invoiceService } from "@/lib/database";
 import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth/next";
 
 async function getNextInvoiceNumber(userId: string): Promise<string> {
-  const lastInvoice = await prisma.invoice.findFirst({
-    where: { client: { userId } },
-    orderBy: { createdAt: 'desc' },
-  });
+  const invoices = await invoiceService.getInvoicesByUserId(userId);
 
-  if (!lastInvoice) {
+  if (invoices.length === 0) {
     return 'INV-00001';
   }
 
-  const lastNumber = parseInt(lastInvoice.invoiceNumber.split('-')[1]);
+  const lastInvoice = invoices[0]; // Already sorted by created_at desc
+  const lastNumber = parseInt(lastInvoice.invoice_number.split('-')[1]);
   const nextNumber = lastNumber + 1;
   return `INV-${String(nextNumber).padStart(5, '0')}`;
 }
@@ -40,29 +38,21 @@ export async function POST(request: Request) {
     const itemsWithTotals = items.map((item: { description: string; quantity: number; unitPrice: number; }) => ({
       description: item.description,
       quantity: Number(item.quantity),
-      unitPrice: Number(item.unitPrice),
+      unit_price: Number(item.unitPrice),
       total: Number(item.quantity) * Number(item.unitPrice),
     }));
 
     const amount = itemsWithTotals.reduce((sum: number, item: { total: number; }) => sum + item.total, 0);
     const invoiceNumber = await getNextInvoiceNumber(session.user.id);
 
-    const newInvoice = await prisma.invoice.create({
-      data: {
-        invoiceNumber,
-        status: 'DRAFT',
-        amount,
-        dueDate: dueDate ? new Date(dueDate) : null,
-        notes,
-        client: { connect: { id: clientId } },
-        items: {
-          create: itemsWithTotals,
-        },
-      },
-      include: {
-        items: true,
-      },
-    });
+    const newInvoice = await invoiceService.createInvoice({
+      invoice_number: invoiceNumber,
+      status: 'DRAFT',
+      amount,
+      due_date: dueDate ? new Date(dueDate).toISOString() : null,
+      notes,
+      client_id: clientId,
+    }, itemsWithTotals);
 
     return NextResponse.json(newInvoice, { status: 201 });
   } catch (error) {

@@ -1,10 +1,15 @@
-import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { Client, Invoice, InvoiceItem, User } from "@prisma/client";
+import { invoiceService, clientService } from "@/lib/database";
 import InvoiceViewPage from "./InvoiceViewPage";
 import Link from "next/link";
+import type { Database } from "@/lib/supabase";
+
+type Invoice = Database['public']['Tables']['invoices']['Row'];
+type Client = Database['public']['Tables']['clients']['Row'];
+type InvoiceItem = Database['public']['Tables']['invoice_items']['Row'];
+type User = Database['public']['Tables']['users']['Row'];
 
 type InvoiceDetails = Invoice & {
   client: Client & {
@@ -14,24 +19,18 @@ type InvoiceDetails = Invoice & {
 };
 
 async function getInvoice(invoiceId: string, userId: string): Promise<InvoiceDetails | null> {
-  const invoice = await prisma.invoice.findUnique({
-    where: {
-      id: invoiceId,
-      client: {
-        userId: userId,
-      }
-    },
-    include: {
-      client: {
-        include: {
-          user: true,
-        },
-      },
-      items: true,
-    },
-  });
+  const invoice = await invoiceService.getInvoiceById(invoiceId);
   
-  return invoice as InvoiceDetails | null;
+  if (!invoice) return null;
+  
+  // Check if the user has permission to view this invoice
+  // We need to verify that the client belongs to the user
+  const client = await clientService.getClientById(invoice.client_id);
+  if (!client || client.user_id !== userId) {
+    return null;
+  }
+  
+  return invoice as InvoiceDetails;
 }
 
 export default async function InvoicePage({ params }: { params: Promise<{ id: string }> }) {

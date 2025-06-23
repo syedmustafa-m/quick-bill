@@ -1,7 +1,7 @@
 import { AuthOptions } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
 import bcrypt from "bcrypt"
-import prisma from "@/lib/prisma"
+import { userService } from "@/lib/database"
 
 export const authOptions: AuthOptions = {
   // Configure one or more authentication providers
@@ -22,17 +22,13 @@ export const authOptions: AuthOptions = {
           throw new Error("Missing credentials")
         }
 
-        const user = await prisma.user.findUnique({
-          where: {
-            email: credentials.email,
-          },
-        })
+        const user = await userService.getUserByEmail(credentials.email)
 
         if (!user || !user.password) {
           throw new Error("No user found")
         }
 
-        if (!user.emailVerified) {
+        if (!user.email_verified) {
           throw new Error("Please verify your email before signing in.")
         }
 
@@ -46,6 +42,7 @@ export const authOptions: AuthOptions = {
           id: user.id,
           name: user.name,
           email: user.email,
+          image: user.profile_picture_url,
         }
       }
     })
@@ -54,9 +51,27 @@ export const authOptions: AuthOptions = {
     signIn: "/auth/signin",
   },
   callbacks: {
+    async jwt({ token, user, trigger, session }) {
+      if (user) {
+        token.sub = user.id;
+        token.name = user.name;
+        token.email = user.email;
+        token.picture = user.image;
+      }
+      
+      if (trigger === "update" && session?.user) {
+        token.name = session.user.name;
+        token.picture = session.user.image;
+      }
+
+      return token;
+    },
     async session({ session, token }) {
       if (token && session.user) {
         session.user.id = token.sub as string;
+        session.user.name = token.name as string;
+        session.user.email = token.email as string;
+        session.user.image = token.picture as string;
       }
       return session;
     },

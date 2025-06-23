@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+import { clientService } from "@/lib/database";
 import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth/next";
 
@@ -21,17 +21,15 @@ export async function POST(request: Request) {
       );
     }
 
-    const newClient = await prisma.client.create({
-      data: {
-        userId: session.user.id,
-        companyName,
-        contactName,
-        email,
-        phone,
-        address,
-        website,
-        notes,
-      },
+    const newClient = await clientService.createClient({
+      user_id: session.user.id,
+      company_name: companyName,
+      contact_name: contactName,
+      email,
+      phone,
+      address,
+      website,
+      notes,
     });
 
     return NextResponse.json(newClient, { status: 201 });

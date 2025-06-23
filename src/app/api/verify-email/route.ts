@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+import { userService } from "@/lib/database";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -10,21 +10,11 @@ export async function GET(request: Request) {
   }
 
   try {
-    const user = await prisma.user.findUnique({
-      where: { verificationToken: token },
-    });
+    const user = await userService.verifyEmail(token);
 
     if (!user) {
       return new NextResponse("Invalid token", { status: 400 });
     }
-
-    await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        emailVerified: new Date(),
-        verificationToken: null, // Clear the token
-      },
-    });
 
     // Redirect to a success page
     const redirectUrl = new URL("/auth/verified", request.url);

@@ -2,13 +2,78 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer components {
+  /* Brand color utilities - these will be overridden by dynamic CSS */
+  .text-brand-start {
+    color: #f97316; /* Default orange */
+  }
+  
+  .text-brand-end {
+    color: #ea580c; /* Default orange */
+  }
+  
+  .bg-brand-start {
+    background-color: #f97316; /* Default orange */
+  }
+  
+  .bg-brand-end {
+    background-color: #ea580c; /* Default orange */
+  }
+  
+  .border-brand-start {
+    border-color: #f97316; /* Default orange */
+  }
+  
+  .ring-brand-start {
+    --tw-ring-color: #f97316; /* Default orange */
+  }
+  
+  .hover\:bg-brand-start\/90:hover {
+    background-color: #f97316; /* Default orange */
+  }
+  
+  .hover\:text-brand-start\/90:hover {
+    color: #f97316; /* Default orange */
+  }
+  
+  /* Gradient utilities */
+  .bg-gradient-to-r {
+    background-image: linear-gradient(to right, #f97316, #ea580c); /* Default orange */
+  }
+  
+  .from-brand-start {
+    --tw-gradient-from: #f97316; /* Default orange */
+    --tw-gradient-to: transparent;
+    --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+  }
+  
+  .to-brand-end {
+    --tw-gradient-to: #ea580c; /* Default orange */
+  }
+}
+
+/* Custom scrollbar for dark mode */
+.dark ::-webkit-scrollbar {
+  width: 8px;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: rgb(0 0 0);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: rgb(38 38 38);
+  border-radius: 4px;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgb(64 64 64);
+}
 
 :root {
   --background: #ffffff;
   --foreground: #171717;
-  --brand-blue: 51, 95, 179;
 }
-
 
 @theme inline {
   --color-background: var(--background);

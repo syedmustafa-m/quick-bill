@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth/next";
-import prisma from "@/lib/prisma";
+import { clientService, invoiceService } from "@/lib/database";
 
 export async function DELETE(request: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -10,38 +10,31 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Extract clientId from URL
-  const url = new URL(request.url);
-  const pathnameParts = url.pathname.split('/');
-  const clientId = pathnameParts[pathnameParts.length - 1];
+  // Extract client ID from the URL
+  const clientId = request.nextUrl.pathname.split("/").pop();
+
+  if (!clientId) {
+    return NextResponse.json({ error: "Client ID is missing" }, { status: 400 });
+  }
 
   try {
-    const client = await prisma.client.findFirst({
-      where: {
-        id: clientId,
-        userId: session.user.id,
-      },
-      include: {
-        invoices: true,
-      },
-    });
+    const client = await clientService.getClientById(clientId);
 
-    if (!client) {
+    if (!client || client.user_id !== session.user.id) {
       return NextResponse.json({ error: "Client not found" }, { status: 404 });
     }
 
-    if (client.invoices.length > 0) {
+    const invoices = await invoiceService.getInvoicesByUserId(session.user.id);
+    const clientInvoices = invoices.filter(invoice => invoice.client_id === clientId);
+
+    if (clientInvoices.length > 0) {
       return NextResponse.json(
         { error: "Cannot delete a client with existing invoices. Please delete the invoices first." },
         { status: 400 }
       );
     }
 
-    await prisma.client.delete({
-      where: {
-        id: clientId,
-      },
-    });
+    await clientService.deleteClient(clientId);
 
     return NextResponse.json({ message: "Client deleted successfully" }, { status: 200 });
   } catch (error) {

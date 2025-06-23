@@ -1,7 +1,49 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth/next";
-import prisma from "@/lib/prisma";
+import { invoiceService } from "@/lib/database";
+
+export async function PUT(request: NextRequest) {
+  const session = await getServerSession(authOptions);
+
+  if (!session || !session.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const invoiceId = request.nextUrl.pathname.split("/").pop();
+
+  if (!invoiceId) {
+    return NextResponse.json({ error: "Missing invoice ID" }, { status: 400 });
+  }
+
+  try {
+    const body = await request.json();
+    const { status, ...otherUpdates } = body;
+
+    const invoice = await invoiceService.getInvoiceById(invoiceId);
+
+    if (!invoice) {
+      return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
+    }
+
+    const userInvoices = await invoiceService.getInvoicesByUserId(session.user.id);
+    const userInvoiceIds = userInvoices.map(inv => inv.id);
+
+    if (!userInvoiceIds.includes(invoiceId)) {
+      return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
+    }
+
+    const updatedInvoice = await invoiceService.updateInvoice(invoiceId, {
+      status,
+      ...otherUpdates
+    });
+
+    return NextResponse.json(updatedInvoice, { status: 200 });
+  } catch (error) {
+    console.error("Error updating invoice:", error);
+    return NextResponse.json({ error: "An unexpected error occurred." }, { status: 500 });
+  }
+}
 
 export async function DELETE(request: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -10,31 +52,27 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // ✅ Extract invoice ID from URL
-  const url = new URL(request.url);
-  const segments = url.pathname.split('/');
-  const invoiceId = segments[segments.length - 1];
+  const invoiceId = request.nextUrl.pathname.split("/").pop();
+
+  if (!invoiceId) {
+    return NextResponse.json({ error: "Missing invoice ID" }, { status: 400 });
+  }
 
   try {
-    // Verify the invoice belongs to the user's client
-    const invoice = await prisma.invoice.findFirst({
-      where: {
-        id: invoiceId,
-        client: {
-          userId: session.user.id,
-        },
-      },
-    });
+    const invoice = await invoiceService.getInvoiceById(invoiceId);
 
     if (!invoice) {
       return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
     }
 
-    // Delete related items and then the invoice
-    await prisma.$transaction([
-      prisma.invoiceItem.deleteMany({ where: { invoiceId } }),
-      prisma.invoice.delete({ where: { id: invoiceId } }),
-    ]);
+    const userInvoices = await invoiceService.getInvoicesByUserId(session.user.id);
+    const userInvoiceIds = userInvoices.map(inv => inv.id);
+
+    if (!userInvoiceIds.includes(invoiceId)) {
+      return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
+    }
+
+    await invoiceService.deleteInvoice(invoiceId);
 
     return NextResponse.json({ message: "Invoice deleted successfully" }, { status: 200 });
   } catch (error) {

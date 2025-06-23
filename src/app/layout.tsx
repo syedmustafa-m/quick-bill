@@ -1,16 +1,19 @@
 import './globals.css';
 import { Inter } from 'next/font/google';
 import SessionProvider from './components/SessionProvider';
+import { ThemeProvider } from './components/ThemeProvider';
+import ToastProvider from './components/ToastProvider';
+import type { Metadata } from "next";
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import AppLayout from './components/AppLayout';
-import NextTopLoader from 'nextjs-toploader';
+import ThemeAwareTopLoader from './components/ThemeAwareTopLoader';
 
 const inter = Inter({ subsets: ['latin'] });
 
-export const metadata = {
+export const metadata: Metadata = {
   title: 'Invoice Generator',
-  description: 'Generate and manage your invoices with ease.',
+  description: 'Generate professional invoices with ease',
 };
 
 export default async function RootLayout({
@@ -22,16 +25,15 @@ export default async function RootLayout({
 
   return (
     <html lang="en">
-      <body className={`${inter.className} bg-gray-900 text-gray-100`}>
-        <NextTopLoader color="#3b82f6" showSpinner={false} />
+      <body className={inter.className}>
         <SessionProvider session={session}>
-          {session ? (
-            <AppLayout>{children}</AppLayout>
-          ) : (
-            <main className="flex items-center justify-center min-h-screen">
+          <ThemeProvider>
+            <ThemeAwareTopLoader />
+            <AppLayout>
               {children}
-            </main>
-          )}
+            </AppLayout>
+            <ToastProvider />
+          </ThemeProvider>
         </SessionProvider>
       </body>
     </html>

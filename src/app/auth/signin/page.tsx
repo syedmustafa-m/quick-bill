@@ -1,122 +1,153 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
+import { useState, useEffect } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
-import ErrorBox from "../../components/ErrorBox";
+import Link from "next/link";
+import Input from "@/app/components/ui/Input";
+import Label from "@/app/components/ui/Label";
+import Button from "@/app/components/ui/Button";
+import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
+import FieldGroup from "@/app/components/ui/FieldGroup";
 
 export default function SignInPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") || "/";
+  const [isLoading, setIsLoading] = useState(false);
+  const [form, setForm] = useState({
+    email: "",
+    password: "",
+  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [touched, setTouched] = useState<{ [k: string]: boolean }>({});
+  const [errors, setErrors] = useState<{ [k: string]: string }>({});
   const aError = searchParams.get("error");
+
+  useEffect(() => {
+    if (aError) {
+      setErrors({ email: "You need to verify your email before you can sign in." });
+    }
+  }, [aError]);
+
+  const validate = (field?: string) => {
+    const newErrors: { [k: string]: string } = {};
+    if (!form.email.trim()) newErrors.email = "Email is required.";
+    else if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(form.email)) newErrors.email = "Invalid email address.";
+    if (!form.password) newErrors.password = "Password is required.";
+    if (field) return { [field]: newErrors[field] };
+    return newErrors;
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
+    setTouched((prev) => ({ ...prev, [name]: true }));
+    setErrors((prev) => ({ ...prev, ...validate(name) }));
+  };
+
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const { name } = e.target;
+    setTouched((prev) => ({ ...prev, [name]: true }));
+    setErrors((prev) => ({ ...prev, ...validate(name) }));
+  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setIsSubmitting(true);
-    setError(null);
-
-    const result = await signIn("credentials", {
-      redirect: false,
-      email,
-      password,
-    });
+    setTouched({ email: true, password: true });
+    const newErrors = validate();
+    setErrors(newErrors);
+    if (Object.keys(newErrors).length > 0) return;
     
-    setIsSubmitting(false);
+    setIsLoading(true);
 
-    if (result?.error) {
-      if (result.error === 'CredentialsSignin') {
-        setError('Invalid email or password.');
+    try {
+      const result = await signIn("credentials", {
+        email: form.email,
+        password: form.password,
+        redirect: false,
+      });
+
+      if (result?.error) {
+        if (result.error === "CredentialsSignin") {
+          setErrors({ password: "The email or password you entered is incorrect." });
+        } else {
+          setErrors({ email: result.error });
+        }
       } else {
-        setError(result.error);
+        router.push("/");
+        router.refresh();
       }
-    } else {
-      router.push(callbackUrl);
+    } catch {
+      setErrors({ password: "An unexpected error occurred. Please try again." });
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="flex min-h-full flex-col justify-center py-12 sm:px-6 lg:px-8 bg-gray-100 dark:bg-gray-900">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <h1 className="text-center text-3xl font-bold text-brand-blue">InvGen</h1>
-        <h2 className="mt-6 text-center text-2xl font-bold leading-9 tracking-tight text-gray-900 dark:text-gray-100">
-          Sign in to your account
-        </h2>
-      </div>
-
-      <div className="mt-10 sm:mx-auto sm:w-full sm:max-w-[480px]">
-        <div className="bg-white dark:bg-gray-800 px-6 py-12 shadow sm:rounded-lg sm:px-12">
-          {error && <ErrorBox message={error} />}
-          {aError && !error && <ErrorBox message="You need to verify your email before you can sign in." />}
-          <form className="space-y-6" onSubmit={handleSubmit}>
-            <div>
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-200"
-              >
-                Email address
-              </label>
-              <div className="mt-2">
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="block w-full rounded-md border-0 py-1.5 px-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-brand-blue sm:text-sm sm:leading-6"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-200"
-              >
-                Password
-              </label>
-              <div className="mt-2">
-                <input
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-black py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full">
+        <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-lg px-8 py-10 border border-gray-200 dark:border-neutral-800">
+          <h2 className="text-center text-3xl font-extrabold text-gray-900 dark:text-gray-100 mb-2">
+            Sign in to your account
+          </h2>
+          <p className="mb-8 text-center text-sm text-gray-600 dark:text-gray-400">
+            Or{" "}
+            <Link
+              href="/auth/signup"
+              className="font-medium text-brand-start hover:text-brand-end"
+            >
+              create a new account
+            </Link>
+          </p>
+          
+          <form className="space-y-5" onSubmit={handleSubmit} noValidate>
+            <FieldGroup>
+              <Label htmlFor="email" required>Email Address</Label>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                value={form.email}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                error={touched.email && errors.email ? errors.email : undefined}
+                placeholder="Enter your email address"
+              />
+            </FieldGroup>
+            
+            <FieldGroup>
+              <Label htmlFor="password" required>Password</Label>
+              <div className="relative">
+                <Input
                   id="password"
                   name="password"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   autoComplete="current-password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="block w-full rounded-md border-0 py-1.5 px-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-brand-blue sm:text-sm sm:leading-6"
+                  value={form.password}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  error={touched.password && errors.password ? errors.password : undefined}
+                  placeholder="Enter your password"
                 />
+                <button
+                  type="button"
+                  tabIndex={-1}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeSlashIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
+                </button>
               </div>
-            </div>
+            </FieldGroup>
 
-            <div>
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="flex w-full justify-center rounded-md bg-brand-blue px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-brand-blue/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue disabled:opacity-50"
-              >
-                {isSubmitting ? "Signing in..." : "Sign in"}
-              </button>
-            </div>
+            <Button type="submit" className="w-full mt-2" loading={isLoading}>
+              Sign in
+            </Button>
           </form>
         </div>
-
-        <p className="mt-10 text-center text-sm text-gray-500 dark:text-gray-400">
-          Not a member?{" "}
-          <Link
-            href="/auth/signup"
-            className="font-semibold leading-6 text-brand-blue hover:text-brand-blue/90"
-          >
-            Sign up now
-          </Link>
-        </p>
       </div>
     </div>
   );

@@ -1,15 +1,12 @@
-import prisma from "@/lib/prisma";
+import { clientService } from "@/lib/database";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import ClientList from "./ClientList";
 
 async function getClients(userId: string) {
-  const clients = await prisma.client.findMany({
-    where: { userId },
-    orderBy: { companyName: "asc" },
-  });
-  return clients;
+  const clients = await clientService.getClientsByUserId(userId);
+  return clients.sort((a, b) => a.company_name.localeCompare(b.company_name));
 }
 
 export default async function ClientsPage() {

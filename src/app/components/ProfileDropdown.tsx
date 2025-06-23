@@ -15,49 +15,74 @@ export default function ProfileDropdown() {
     return null;
   }
 
+  const userImage = session.user.image;
+
   return (
     <Menu as="div" className="relative inline-block text-left">
       <div>
-        <Menu.Button className="flex items-center rounded-full bg-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue focus:ring-offset-2">
+        <Menu.Button className="flex items-center rounded-full bg-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-start focus:ring-offset-2 dark:bg-black">
           <span className="sr-only">Open user menu</span>
-          <Image
-            src={session.user.image || `https://ui-avatars.com/api/?name=${session.user.name}&background=335fb3&color=fff`}
-            width={40}
-            height={40}
-            alt="User avatar"
-            className="rounded-full"
-          />
+          {userImage ? (
+            <Image
+              src={userImage}
+              width={32}
+              height={32}
+              alt="User avatar"
+              className="h-8 w-8 rounded-full object-cover"
+            />
+          ) : (
+            <UserCircleIcon className="h-8 w-8 text-gray-500" />
+          )}
         </Menu.Button>
       </div>
       <Transition
         as={Fragment}
-        enter="transition ease-out duration-100"
+        enter="transition ease-out duration-200"
         enterFrom="transform opacity-0 scale-95"
         enterTo="transform opacity-100 scale-100"
         leave="transition ease-in duration-75"
         leaveFrom="transform opacity-100 scale-100"
         leaveTo="transform opacity-0 scale-95"
       >
-        <Menu.Items className="absolute right-0 z-10 mt-2 w-56 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
-          <div className="p-1">
-            <div className="px-4 py-3 border-b border-gray-100">
-              <p className="text-sm text-gray-900">Signed in as</p>
-              <p className="truncate text-sm font-medium text-gray-600">
+        <Menu.Items className="absolute right-0 z-10 mt-2 w-56 origin-top-right rounded-lg border border-gray-200 bg-white shadow-lg focus:outline-none dark:border-neutral-800 dark:bg-black">
+          <div className="p-2">
+            <div className="px-3 py-2">
+              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                {session.user.name}
+              </p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
                 {session.user.email}
               </p>
             </div>
-            <div className="py-1">
-                <Menu.Item>
-                    <Link href="/profile/edit" className="group flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-blue-100 hover:text-brand-blue rounded-md">
-                        <UserCircleIcon className="mr-3 h-5 w-5 text-gray-400 group-hover:text-brand-blue" />
-                        Edit Profile
-                    </Link>
-                </Menu.Item>
+            <div className="border-t border-gray-100 pt-2 dark:border-neutral-800">
+              <Menu.Item>
+                {({ active }) => (
+                  <Link
+                    href="/profile/edit"
+                    className={`${
+                      active
+                        ? "bg-gray-50 text-gray-900 dark:bg-neutral-900 dark:text-gray-100"
+                        : "text-gray-700 dark:text-gray-300"
+                    } group flex w-full items-center rounded-md px-3 py-2 text-sm transition-colors`}
+                  >
+                    <UserCircleIcon className="mr-3 h-4 w-4 text-gray-400 dark:text-gray-500" />
+                    Edit Profile
+                  </Link>
+                )}
+              </Menu.Item>
             </div>
-            <div className="py-1 border-t border-gray-100">
-                <Menu.Item>
+            <div className="border-t border-gray-100 pt-2 dark:border-neutral-800">
+              <Menu.Item>
+                {({ active }) => (
+                  <div
+                    className={
+                      active ? "rounded-md bg-gray-50 dark:bg-neutral-900" : ""
+                    }
+                  >
                     <SignOutButton />
-                </Menu.Item>
+                  </div>
+                )}
+              </Menu.Item>
             </div>
           </div>
         </Menu.Items>

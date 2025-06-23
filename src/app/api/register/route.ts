@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import bcrypt from "bcrypt";
-import prisma from "@/lib/prisma";
+import { userService } from "@/lib/database";
 import { sendVerificationEmail } from "@/lib/email";
 import crypto from "crypto";
 
@@ -16,33 +15,28 @@ export async function POST(request: Request) {
       );
     }
 
-    const exist = await prisma.user.findUnique({
-      where: {
-        email: email,
-      },
-    });
+    const existingUser = await userService.getUserByEmail(email);
 
-    if (exist) {
+    if (existingUser) {
       return NextResponse.json(
         { message: "User with this email already exists" },
         { status: 400 }
       );
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
     const verificationToken = crypto.randomBytes(32).toString("hex");
 
-    await prisma.user.create({
-      data: {
-        name,
-        email,
-        password: hashedPassword,
-        verificationToken,
-        emailVerified: null,
-      },
-    });
+    await userService.createUser(email, password, name);
+    
+    // Update user with verification token
+    const user = await userService.getUserByEmail(email);
+    if (user) {
+      await userService.updateUser(user.id, { verification_token: verificationToken });
+    }
 
-    await sendVerificationEmail(email, verificationToken);
+    // Extract first name for email personalization
+    const firstName = name.split(' ')[0];
+    await sendVerificationEmail(email, verificationToken, firstName);
 
     return NextResponse.json({ message: "Verification email sent. Please check your inbox." });
   } catch (error) {

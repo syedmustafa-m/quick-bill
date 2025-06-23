@@ -1,19 +1,11 @@
 import InvoiceList from "./InvoiceList";
-import prisma from "@/lib/prisma";
+import { invoiceService } from "@/lib/database";
 import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth/next";
 import { redirect } from "next/navigation";
 
 async function getInvoices(userId: string) {
-  const invoices = await prisma.invoice.findMany({
-    where: { client: { userId: userId } },
-    include: {
-      client: true,
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
-  });
+  const invoices = await invoiceService.getInvoicesByUserId(userId);
   return invoices;
 }
 
