@@ -18,7 +18,7 @@ export async function POST(request: Request) {
     }
 
     // Validate folder to prevent security issues
-    const allowedFolders = ['avatars', 'logos'];
+    const allowedFolders = ['avatars', 'logos', 'invoices', 'invoice-attachments'];
     if (!allowedFolders.includes(folder)) {
       return NextResponse.json({ error: "Invalid folder specified" }, { status: 400 });
     }

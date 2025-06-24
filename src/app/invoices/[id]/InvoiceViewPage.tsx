@@ -99,9 +99,47 @@ export default function InvoiceViewPage({ invoice: initialInvoice }: InvoiceView
         const toastId = toast.loading('Generating PDF and sending email to client...');
 
         try {
+            // 1. Generate PDF as Blob using html2pdf.js
+            const html2pdf = (await import('html2pdf.js')).default;
+            const element = invoiceRef.current;
+            if (!element) throw new Error('Invoice element not found');
+
+            const opt = {
+                margin: 0.5,
+                filename: `invoice-${invoice.invoice_number}.pdf`,
+                image: { type: 'png', quality: 1.0 },
+                html2canvas: { scale: 4, useCORS: true },
+                jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+            };
+
+            // Generate PDF as Blob
+            const pdfBlob: Blob = await new Promise((resolve, reject) => {
+                html2pdf().from(element).set(opt).outputPdf('blob').then(resolve).catch(reject);
+            });
+
+            // 2. Get signed upload URL from server
+            const filename = `invoice-${invoice.invoice_number}-${Date.now()}.pdf`;
+            const signedUrlRes = await fetch('/api/profile/signed-upload-url', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ filename, folder: 'invoice-attachments' })
+            });
+            if (!signedUrlRes.ok) throw new Error('Failed to get signed upload URL');
+            const { signedUrl, path } = await signedUrlRes.json();
+
+            // 3. Upload PDF Blob to Supabase
+            const uploadRes = await fetch(signedUrl, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/pdf' },
+                body: pdfBlob
+            });
+            if (!uploadRes.ok) throw new Error('Failed to upload PDF to Supabase');
+
+            // 4. Call send-invoice API with file path
             const res = await fetch(`/api/invoices/${invoice.id}/send`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ pdfPath: path })
             });
 
             if (res.ok) {
@@ -111,8 +149,9 @@ export default function InvoiceViewPage({ invoice: initialInvoice }: InvoiceView
                 const error = await res.json();
                 toast.error(error.message || 'Failed to send invoice', { id: toastId });
             }
-        } catch {
-            toast.error('Failed to send invoice', { id: toastId });
+        } catch (err: unknown) {
+            const errorMessage = err instanceof Error ? err.message : 'Failed to send invoice';
+            toast.error(errorMessage, { id: toastId });
         } finally {
             setIsSending(false);
         }
