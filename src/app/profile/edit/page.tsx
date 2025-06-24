@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, ChangeEvent, FormEvent } from 'react';
-import { useSession } from 'next-auth/react';
+import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { CameraIcon, UserCircleIcon, BuildingOfficeIcon } from '@heroicons/react/24/outline';
@@ -11,6 +11,7 @@ import Input from '@/app/components/ui/Input';
 import Button from '@/app/components/ui/Button';
 import Label from '@/app/components/ui/Label';
 import FieldGroup from '@/app/components/ui/FieldGroup';
+import ConfirmationModal from '@/app/components/ConfirmationModal';
 
 interface ProfileData {
   firstName: string;
@@ -29,6 +30,9 @@ export default function EditProfilePage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isLoadingData, setIsLoadingData] = useState(true);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deleteEmail, setDeleteEmail] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const [profileData, setProfileData] = useState<ProfileData>({
     firstName: '',
@@ -171,6 +175,26 @@ export default function EditProfilePage() {
     }
   };
 
+  const handleDeleteAccount = async () => {
+    setIsDeleting(true);
+    try {
+      const res = await fetch('/api/profile', { method: 'DELETE' });
+      if (res.ok) {
+        toast.success('Account deleted successfully');
+        await signOut({ callbackUrl: '/' });
+      } else {
+        const data = await res.json();
+        toast.error(data.message || 'Failed to delete account');
+      }
+    } catch {
+      toast.error('Failed to delete account');
+    } finally {
+      setIsDeleting(false);
+      setIsDeleteModalOpen(false);
+      setDeleteEmail('');
+    }
+  };
+
   if (isLoadingData) {
     return (
       <div className="max-w-4xl mx-auto">
@@ -289,6 +313,51 @@ export default function EditProfilePage() {
           </Button>
         </div>
       </div>
+
+      <div className="bg-white dark:bg-black rounded-lg shadow-sm border border-gray-200 dark:border-neutral-800">
+        <div className="p-6 border-t border-gray-200 dark:border-neutral-800">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+            <svg className="h-5 w-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+            Danger Zone
+          </h2>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+            Once you delete your account, there is no going back. Please be certain.
+          </p>
+          <Button
+            type="button"
+            variant="danger"
+            onClick={() => setIsDeleteModalOpen(true)}
+            className="bg-red-600 hover:bg-red-700 text-white border-red-600 hover:border-red-700 px-6 py-2.5 text-sm font-medium rounded-lg transition-colors duration-200"
+          >
+            Delete Account
+          </Button>
+        </div>
+      </div>
+
+      <ConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => { setIsDeleteModalOpen(false); setDeleteEmail(''); }}
+        onConfirm={handleDeleteAccount}
+        title="Delete Account"
+        message={
+          <span>
+            This action is <b>permanent</b> and cannot be undone.<br />
+            Please type your email <b>({profileData.email})</b> to confirm deletion.<br />
+            <input
+              type="email"
+              className="mt-4 w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-red-500 focus:ring-1 focus:ring-red-500 dark:bg-black dark:border-neutral-700 dark:text-gray-100"
+              placeholder="Enter your email to confirm"
+              value={deleteEmail}
+              onChange={e => setDeleteEmail(e.target.value)}
+              disabled={isDeleting}
+            />
+          </span>
+        }
+        confirmText={isDeleting ? 'Deleting...' : 'Delete'}
+        confirmDisabled={deleteEmail !== profileData.email || isDeleting}
+      />
     </form>
   );
 } 

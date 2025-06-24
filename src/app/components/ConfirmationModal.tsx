@@ -1,7 +1,7 @@
 "use client";
 
 import { Dialog, Transition } from '@headlessui/react';
-import { Fragment } from 'react';
+import { Fragment, ReactNode } from 'react';
 import { ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 
 interface ConfirmationModalProps {
@@ -9,8 +9,9 @@ interface ConfirmationModalProps {
     onClose: () => void;
     onConfirm: () => void;
     title: string;
-    message: string;
+    message: ReactNode;
     confirmText?: string;
+    confirmDisabled?: boolean;
 }
 
 export default function ConfirmationModal({ 
@@ -19,7 +20,8 @@ export default function ConfirmationModal({
     onConfirm,
     title,
     message,
-    confirmText = "Delete"
+    confirmText = "Delete",
+    confirmDisabled
 }: ConfirmationModalProps) {
   return (
     <Transition appear show={isOpen} as={Fragment}>
@@ -71,6 +73,7 @@ export default function ConfirmationModal({
                       onConfirm();
                       onClose();
                     }}
+                    disabled={confirmDisabled}
                   >
                     {confirmText}
                   </button>

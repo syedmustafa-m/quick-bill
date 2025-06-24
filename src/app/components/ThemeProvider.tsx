@@ -102,20 +102,10 @@ const injectCSS = (css: string, id: string) => {
   document.head.appendChild(style);
 };
 
-// Function to apply theme immediately from localStorage
-const applyThemeFromStorage = () => {
-  try {
-    const savedTheme = localStorage.getItem('user-theme');
-    if (savedTheme && colorThemes[savedTheme as keyof typeof colorThemes]) {
-      const themeColors = colorThemes[savedTheme as keyof typeof colorThemes];
-      const css = generateBrandCSS(themeColors);
-      injectCSS(css, 'immediate-brand-theme');
-      return savedTheme;
-    }
-  } catch {
-    // Silently handle error
-  }
-  return null;
+// Function to apply theme to DOM
+const applyThemeToDOM = (themeColors: typeof colorThemes['modern-orange']) => {
+  const css = generateBrandCSS(themeColors);
+  injectCSS(css, 'dynamic-brand-theme');
 };
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
@@ -123,17 +113,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [currentTheme, setCurrentTheme] = useState('modern-orange');
   const [isLoading, setIsLoading] = useState(true);
 
-  // Apply theme immediately on mount to prevent flash
-  useEffect(() => {
-    const savedTheme = applyThemeFromStorage();
-    if (savedTheme) {
-      setCurrentTheme(savedTheme);
-    }
-  }, []);
-
   // Function to load and apply theme from server
   const loadUserTheme = useCallback(async () => {
     if (!session?.user) {
+      // Reset to default theme when not authenticated
+      setCurrentTheme('modern-orange');
       setIsLoading(false);
       return;
     }
@@ -144,36 +128,23 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         const userData = await res.json();
         const userTheme = userData.brand_theme || 'modern-orange';
         setCurrentTheme(userTheme);
-        
-        // Save to localStorage for immediate application on next load
-        localStorage.setItem('user-theme', userTheme);
-        
-        // Apply theme immediately
-        const themeColors = colorThemes[userTheme as keyof typeof colorThemes] || colorThemes['modern-orange'];
-        applyThemeToDOM(themeColors);
+      } else {
+        // Fallback to default theme if API fails
+        setCurrentTheme('modern-orange');
       }
     } catch {
-      // Silently handle error
+      // Fallback to default theme if API fails
+      setCurrentTheme('modern-orange');
     } finally {
       setIsLoading(false);
     }
   }, [session]);
 
-  // Function to apply theme to DOM
-  const applyThemeToDOM = (themeColors: typeof colorThemes['modern-orange']) => {
-    const css = generateBrandCSS(themeColors);
-    injectCSS(css, 'dynamic-brand-theme');
-  };
-
   // Load user's theme preference when session is available
   useEffect(() => {
     if (status === 'loading') return;
     
-    if (status === 'authenticated' && session?.user) {
-      loadUserTheme();
-    } else {
-      setIsLoading(false);
-    }
+    loadUserTheme();
   }, [session, status, loadUserTheme]);
 
   // Apply theme whenever currentTheme changes

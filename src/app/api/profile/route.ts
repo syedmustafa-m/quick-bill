@@ -71,4 +71,20 @@ export async function PUT(request: Request) {
     console.error("Error updating profile:", error);
     return NextResponse.json({ message: "Error updating profile" }, { status: 500 });
   }
+}
+
+export async function DELETE() {
+  const session = await getServerSession(authOptions);
+
+  if (!session || !session.user || !session.user.id) {
+    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    await userService.deleteUser(session.user.id);
+    return NextResponse.json({ message: "Account deleted successfully" }, { status: 200 });
+  } catch (error) {
+    console.error("Error deleting account:", error);
+    return NextResponse.json({ message: "Error deleting account" }, { status: 500 });
+  }
 } 

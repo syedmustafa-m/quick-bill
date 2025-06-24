@@ -80,6 +80,14 @@ export const userService = {
     if (error) throw error;
     return data;
   },
+
+  async deleteUser(id: string) {
+    const { error } = await supabaseAdmin
+      .from('users')
+      .delete()
+      .eq('id', id);
+    if (error) throw error;
+  },
 };
 
 // Client operations
